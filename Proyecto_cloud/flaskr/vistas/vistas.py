@@ -38,4 +38,11 @@ class LoadAudio(Resource):
       else:
          return {"mensaje": "formato no valido a transformar"}
 
+class ListAllTask(Resource):
+   def get(self):
+      all_items = Task.query.all()
+      for items in all_items:
+         tasks = {"id":items.id, "initialFormat": items.initialformat,"newformat": items.newformat, "status":items.state}
+         return(tasks)
+
 
