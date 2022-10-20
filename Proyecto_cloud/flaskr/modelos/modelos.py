@@ -14,4 +14,9 @@ class Task(db.Model):
     state = db.Column(db.String(20))
     id_usuario = db.Column(db.Integer)
 
-
+class user(db.Model):
+    id = db.Column(db.Integer, primary_key = True)
+    username = db.Column(db.String(50))
+    password1 = db.Column(db.String(50))
+    password2 = db.Column(db.String(50))
+    email = db.Column(db.String(128))
