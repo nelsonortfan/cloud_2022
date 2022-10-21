@@ -1,9 +1,12 @@
 from flask_restful import Resource
 from flask import request,Flask, request, send_from_directory
 from datetime import datetime
-from ..modelos import db, Task
+from ..modelos import db, Task, User, UserSchema
 import os
 from werkzeug.utils import secure_filename
+from flask_jwt_extended import jwt_required, create_access_token
+
+user_schema = UserSchema()
 
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
@@ -38,4 +41,15 @@ class LoadAudio(Resource):
       else:
          return {"mensaje": "formato no valido a transformar"}
 
+class VistaSignIn(Resource):
+
+   def post(self):
+      new_user = User(username=request.json["username"], password1=request.json["password1"], email=request.json["email"])
+      access_token = create_access_token(identity=request.json['email'])
+      db.session.add(new_user)
+      db.session.commit()
+      return {
+         'message':'Usuario creado exitosamente',
+         'access token':access_token
+      }
 
