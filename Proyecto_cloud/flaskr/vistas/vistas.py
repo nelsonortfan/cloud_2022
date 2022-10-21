@@ -44,8 +44,8 @@ class LoadAudio(Resource):
 
 class TaskDetail(Resource):
 
-   #  @jwt_required()
-    def get(self, id_task):
+   @jwt_required()
+   def get(self, id_task):
         return task_schema.dump(Task.query.get_or_404(id_task))
 
 class CreateTask(Resource):
@@ -83,10 +83,12 @@ class LoginUser(Resource):
 class CreateUser(Resource):
    def post(self):
         Password1 = request.json["Password1"]
-        if (len(Password1)>8):
+        Password2 = request.json["Password2"]
+        
+        if (len(Password1)>8 and Password1==Password2):
             usuario = Usuario.query.filter(Usuario.usuario == request.json["usuario"]).first()
             if usuario is None:
-                nuevo_usuario = Usuario(usuario=request.json["usuario"], Password1=request.json["Password1"], Password2 = request.json["Password1"], correo= request.json["correo"])
+                nuevo_usuario = Usuario(usuario=request.json["usuario"], Password1=request.json["Password1"], Password2 = request.json["Password2"], correo= request.json["correo"])
                 db.session.add(nuevo_usuario)
                 db.session.commit()
                 token_de_acceso = create_access_token(identity=nuevo_usuario.id)

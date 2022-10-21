@@ -19,7 +19,7 @@ api.add_resource(LoadAudio, '/api/tasks')
 api.add_resource(DownloadAudio, '/api/files/<string:filename>')
 api.add_resource(TaskDetail, '/api/tasks/<int:id_task>')
 api.add_resource(CreateTask, '/api/tasks/<int:id_usuario>/create')
-api.add_resource(CreateUser, '/api/user/create')
+api.add_resource(CreateUser, '/api/auth/signup')
 api.add_resource(LoginUser, '/api/user/login')
 
 jwt = JWTManager(app)
