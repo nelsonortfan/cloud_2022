@@ -1,3 +1,4 @@
+import email
 from flask_restful import Resource
 from flask import request,Flask, request, send_from_directory
 from datetime import datetime
@@ -5,6 +6,8 @@ from ..modelos import db, Task, User, UserSchema
 import os
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import jwt_required, create_access_token
+
+import re
 
 user_schema = UserSchema()
 
@@ -44,12 +47,47 @@ class LoadAudio(Resource):
 class VistaSignIn(Resource):
 
    def post(self):
-      new_user = User(username=request.json["username"], password1=request.json["password1"], email=request.json["email"])
-      access_token = create_access_token(identity=request.json['email'])
-      db.session.add(new_user)
-      db.session.commit()
-      return {
-         'message':'Usuario creado exitosamente',
-         'access token':access_token
-      }
+      username = request.json["username"]
+      pass1 = request.json["password1"]
+      pass2 = request.json["password2"]
+      email = request.json["email"]
 
+      regular_phrase = r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
+      
+      email_validation = re.match(regular_phrase, email) is not None
+      email_existing = User.query.filter_by(email = email).all()
+
+      if len(pass1) >= 8 and pass1 == pass2 and email_validation and len(email_existing) == 0:
+         new_user = User(username=username, password=pass1, email=email)
+         access_token = create_access_token(identity=email)
+         db.session.add(new_user)
+         db.session.commit()
+         return {
+            'message':'Usuario creado exitosamente',
+            'access token':access_token
+         }
+      elif len(pass1) < 8:
+         return {'mensaje':'Contraseña debe contener al menos 8 caracteres'}, 401
+      elif pass1 != pass2:
+         return {'mensaje':'Contraseña 2 no coincide'}, 401
+      elif len(email_existing) != 0:
+         return {'mensaje':'Email existente'}, 401
+      else:
+         return {'mensaje':'Correo invalido'}, 401
+
+      
+class VistaLogIn(Resource):
+   def post(self):
+      email = request.json["email"]
+      password = request.json["password"]
+
+      user = User.query.filter_by(email = email, password = password).all()
+      
+      if user:
+         access_token = create_access_token(identity=email)
+         return {
+            'message':'LogIn exitoso',
+            'access token':access_token
+         }, 200
+      else:
+         return {'mensaje':'Nombre de usuario o contraseña incorrectos'}, 401
