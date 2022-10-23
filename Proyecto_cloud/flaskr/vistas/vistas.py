@@ -19,9 +19,20 @@ app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
 
 class DownloadAudio(Resource):
 
+   @jwt_required()
    def get(self,filename):
       try:
-         return send_from_directory(app.config['UPLOADS_FOLDER'], filename)
+         claims = get_jwt()
+         email = claims['sub']
+         user= User.query.filter_by(email = email).first()
+         id_usuario = user.id
+         task = Task.query.filter_by(id_usuario = id_usuario,filename = filename).first()
+         if task is None:
+            return {"mensaje": "Usuario no tiene ese archivo {} en su repositorio".format(filename)},404
+         else:
+            mypath = task.path
+            print("La ruta obtenida de la BD es {}".format(mypath))         
+         return send_from_directory(mypath, filename)
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
    
