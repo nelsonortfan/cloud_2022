@@ -21,6 +21,19 @@ class User(db.Model):
     password = db.Column(db.String(50))
     email = db.Column(db.String(128))
 
+# class EnumDictionary(fields.Field):
+#     def _serialize(self, value, attr, obj, **kwards):
+#         if value in None:
+#             return None
+#         return {'key':value.name, 'value':value.value}
+
+class TaskSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Task
+        include_relationships = True
+        load_instance = True
+        
+
 class UserSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = User

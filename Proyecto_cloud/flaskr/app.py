@@ -1,7 +1,7 @@
 from flaskr import create_app
 from flask_restful import Api
 from .modelos import db
-from .vistas import LoadAudio,DownloadAudio, VistaSignIn, VistaLogIn
+from .vistas import LoadAudio,DownloadAudio, VistaSignIn, VistaLogIn, VistaUpdateTask
 from flask_jwt_extended import JWTManager
 
 app = create_app('default')
@@ -17,5 +17,6 @@ api.add_resource(VistaSignIn, '/api/auth/signup')
 api.add_resource(VistaLogIn, '/api/auth/login')
 api.add_resource(LoadAudio, '/api/tasks')
 api.add_resource(DownloadAudio, '/api/files/<string:filename>')
+api.add_resource(VistaUpdateTask, '/api/tasks/<int:id_task>')
 
 jwt = JWTManager(app)

@@ -1,15 +1,17 @@
-import email
-from flask_restful import Resource
-from flask import request,Flask, request, send_from_directory
-from datetime import datetime
-from ..modelos import db, Task, User, UserSchema
 import os
-from werkzeug.utils import secure_filename
-from flask_jwt_extended import jwt_required, create_access_token
-
 import re
 
+from flask import request,Flask, request, send_from_directory
+from flask_restful import Resource
+from flask_jwt_extended import jwt_required, create_access_token
+from datetime import datetime
+from werkzeug.utils import secure_filename
+from os import remove
+from ..modelos import db, Task, User, UserSchema, TaskSchema
+
+
 user_schema = UserSchema()
+task_schema = TaskSchema()
 
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
@@ -65,7 +67,7 @@ class VistaSignIn(Resource):
          return {
             'message':'Usuario creado exitosamente',
             'access token':access_token
-         }
+         }, 200
       elif len(pass1) < 8:
          return {'mensaje':'Contraseña debe contener al menos 8 caracteres'}, 401
       elif pass1 != pass2:
@@ -90,4 +92,36 @@ class VistaLogIn(Resource):
             'access token':access_token
          }, 200
       else:
-         return {'mensaje':'Nombre de usuario o contraseña incorrectos'}, 401
+         return {'mensaje':'Email de usuario o contraseña incorrectos'}, 401
+
+class VistaUpdateTask(Resource):
+   @jwt_required()
+   def put(self, id_task):
+      task_validation = Task.query.filter_by(id = id_task).all()
+
+      if task_validation:
+         task = Task.query.get(id_task)
+         state = task.state
+
+         if state == 'processed':
+            name_file = task.filename[:-3]
+            new_name_file = name_file + task.newformat
+            remove("uploads/audios/" + new_name_file)
+
+            task.newformat = request.json["newFormat"]
+            task.state = "uploaded"
+            db.session.commit()
+
+            return {
+               'mensaje':'Tarea actualizada correctamente',
+               'Tarea': task_schema.dump(task)
+            }, 200
+         else:
+            task.newformat = request.json["newFormat"]
+            db.session.commit()
+            return {
+               'mensaje':'Tarea actualizada correctamente',
+               'Tarea': task_schema.dump(task)
+            }, 200
+      else:
+         return {'mensaje':'Tarea no existente'}, 404
