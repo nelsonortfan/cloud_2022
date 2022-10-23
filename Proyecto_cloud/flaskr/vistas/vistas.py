@@ -1,5 +1,6 @@
 import os
 import re
+from sys import path
 
 from flask import request,Flask, request, send_from_directory
 from flask_restful import Resource
@@ -41,10 +42,22 @@ class LoadAudio(Resource):
          originalFileExtension = myfile.filename.split(".")[-1].lower()
          if originalFileExtension == 'mp3' or originalFileExtension =='wav' or originalFileExtension =='ogg':
             filename = secure_filename(myfile.filename)
-            myfile.save(os.path.join(app.config["UPLOADS_FOLDER"], filename))
+
+            # validar si la ruta existe
+            mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')
+            print("La ruta concatenada es ", mypath)
+            isExist = os.path.exists(mypath)
+            print("se valida si el folder existe y la respuesta es {}".format(isExist))
+            if isExist == False:
+               print("creando el folder")
+               os.mkdir(mypath)
+               print("folder creado")
+            myfile.save(os.path.join(mypath, filename))
+            #myfile.save(os.path.join(app.config["UPLOADS_FOLDER"], filename))
             mydate = datetime.utcnow()
             mystatus = "uploaded"
-            task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            #task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            task = Task(filename=filename,initialformat=originalFileExtension,path=mypath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
             db.session.add(task)
             db.session.commit()
             return {"mensaje": "cargue archivo {} exitoso".format(filename)}
