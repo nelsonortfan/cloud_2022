@@ -104,9 +104,10 @@ class VistaUpdateTask(Resource):
          state = task.state
 
          if state == 'processed':
+            path_file = task.path
             name_file = task.filename[:-3]
             new_name_file = name_file + task.newformat
-            remove("uploads/audios/" + new_name_file)
+            remove( path_file + new_name_file )
 
             task.newformat = request.json["newFormat"]
             task.state = "uploaded"
