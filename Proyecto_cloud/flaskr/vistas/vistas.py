@@ -3,7 +3,7 @@ import re
 
 from flask import request,Flask, request, send_from_directory
 from flask_restful import Resource
-from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from os import remove
@@ -27,7 +27,14 @@ class DownloadAudio(Resource):
 
 class LoadAudio(Resource):
 
+   @jwt_required()
    def post(self):
+      claims = get_jwt()
+      email = claims['sub']
+      print("el correo es ", email)
+      user= User.query.filter_by(email = email).first()
+      id = user.id
+      print("El id de usuario es ", id)
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
       if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wav':
@@ -37,7 +44,7 @@ class LoadAudio(Resource):
             myfile.save(os.path.join(app.config["UPLOADS_FOLDER"], filename))
             mydate = datetime.utcnow()
             mystatus = "uploaded"
-            task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus)
+            task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
             db.session.add(task)
             db.session.commit()
             return {"mensaje": "cargue archivo {} exitoso".format(filename)}
