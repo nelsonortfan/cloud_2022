@@ -1,8 +1,14 @@
+import shutil
+from sqlite3 import IntegrityError
+from os import remove
+
+app = Flask(__name__)
+app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, create_access_token,get_jwt
 import os
 import re
-from flask import request,Flask, request, send_from_directory
+from flask import request,Flask, send_from_directory
 from flask_restful import Resource
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -20,26 +26,56 @@ task_schema = TaskSchema()
 
 class DownloadAudio(Resource):
 
+   @jwt_required()
    def get(self,filename):
       try:
-         return send_from_directory(app.config['UPLOADS_FOLDER'], filename)
+         claims = get_jwt()
+         email = claims['sub']
+         user= User.query.filter_by(email = email).first()
+         id_usuario = user.id
+         task = Task.query.filter_by(id_usuario = id_usuario,filename = filename).first()
+         if task is None:
+            return {"mensaje": "Usuario no tiene ese archivo {} en su repositorio".format(filename)},404
+         else:
+            mypath = task.path
+            print("La ruta obtenida de la BD es {}".format(mypath))         
+         return send_from_directory(mypath, filename)
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
    
 
 class LoadAudio(Resource):
-
+   @jwt_required()
    def post(self):
+      
+      claims = get_jwt()
+      email = claims['sub']
+      print("el correo es ", email)
+      user= User.query.filter_by(email = email).first()
+      id = user.id
+      print("El id de usuario es ", id)
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
       if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wav':
          originalFileExtension = myfile.filename.split(".")[-1].lower()
          if originalFileExtension == 'mp3' or originalFileExtension =='wav' or originalFileExtension =='ogg':
             filename = secure_filename(myfile.filename)
-            myfile.save(os.path.join(app.config["UPLOADS_FOLDER"], filename))
+
+            # validar si la ruta existe
+            mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')
+            print("La ruta concatenada es ", mypath)
+            isExist = os.path.exists(mypath)
+            print("se valida si el folder existe y la respuesta es {}".format(isExist))
+            if isExist == False:
+               print("creando el folder")
+               os.mkdir(mypath)
+               print("folder creado")
+            myfile.save(os.path.join(mypath, filename))
+            #myfile.save(os.path.join(app.config["UPLOADS_FOLDER"], filename))
             mydate = datetime.utcnow()
             mystatus = "uploaded"
-            task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus)
+            #task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            task = Task(filename=filename,initialformat=originalFileExtension,path=mypath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
             db.session.add(task)
             db.session.commit()
             return {"mensaje": "cargue archivo {} exitoso".format(filename)}
@@ -47,6 +83,71 @@ class LoadAudio(Resource):
             return {"mensaje": "formato no valido de archivo de audio cargado"}
       else:
          return {"mensaje": "formato no valido a transformar"}
+class DeleteAudio(Resource):
+      @jwt_required()
+      def delete(self):
+         try:
+            claims = get_jwt()
+            email = claims['sub']
+            print("el correo es ", email)
+            user= User.query.filter_by(email = email).first()
+            id = user.id
+            tasks = ([task_schema.dump(items) for items in Task.query.filter(Task.id_usuario == id)])
+            for task in tasks:
+               if(task['state'] == "uploaded"):
+                  shutil.rmtree(os.path.join(app.config['UPLOADS_FOLDER'],str(id)))
+                  return "Archivos"
+         except Exception as e:
+            return {"mensaje": "El archivo no existe"},404   
+
+
+class ListAllTask(Resource):
+
+   def get(self, id_usuario):
+      args = request.args
+      max = args.get('max')
+      order = args.get('order')
+      if(max):
+         return [task_schema.dump(items) for items in Task.query.filter(Task.id_usuario == id_usuario).limit(max).all()]
+      elif(order == "asc"):
+         return [task_schema.dump(items) for items in Task.query.filter(Task.id_usuario == id_usuario).order_by(Task.id.asc()).all()]
+      elif(order == "desc"):
+         return [task_schema.dump(items) for items in Task.query.filter(Task.id_usuario == id_usuario).order_by(Task.id.desc()).all()]
+      return [task_schema.dump(items) for items in Task.query.filter(Task.id_usuario == id_usuario)]
+
+
+
+class VistaUpdateTask(Resource):
+   
+   def put(self, id_task):
+      task_validation = Task.query.filter_by(id = id_task).all()
+
+      if task_validation:
+         task = Task.query.get(id_task)
+         state = task.state
+
+         if state == 'uploaded':
+            name_file = task.filename[:-3]
+            new_name_file = name_file + task.newformat
+            remove("uploads/audios/" + new_name_file)
+
+            task.newformat = request.json["newFormat"]
+            task.state = "uploaded"
+            db.session.commit()
+
+            return {
+               'mensaje':'Tarea actualizada correctamente',
+               'Tarea': task_schema.dump(task)
+            }, 200
+         else:
+            task.newformat = request.json["newFormat"]
+            db.session.commit()
+            return {
+               'mensaje':'Tarea actualizada correctamente',
+               'Tarea': task_schema.dump(task)
+            }, 200
+      else:
+         return {'mensaje':'Tarea no existente'}, 404
 
 class VistaSignIn(Resource):
 

@@ -1,3 +1,4 @@
+from marshmallow import fields
 from xml.etree.ElementInclude import include
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
