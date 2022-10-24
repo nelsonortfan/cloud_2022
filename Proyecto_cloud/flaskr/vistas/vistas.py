@@ -1,9 +1,9 @@
+from sqlalchemy.exc import IntegrityError
+from flask_jwt_extended import jwt_required, create_access_token,get_jwt
 import os
 import re
-
 from flask import request,Flask, request, send_from_directory
 from flask_restful import Resource
-from flask_jwt_extended import jwt_required, create_access_token
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from os import remove
@@ -15,6 +15,8 @@ task_schema = TaskSchema()
 
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
+
+task_schema = TaskSchema()
 
 class DownloadAudio(Resource):
 
@@ -126,3 +128,7 @@ class VistaUpdateTask(Resource):
             }, 200
       else:
          return {'mensaje':'Tarea no existente'}, 404
+
+   @jwt_required()
+   def get(self, id_task):
+        return task_schema.dump(Task.query.get_or_404(id_task))
