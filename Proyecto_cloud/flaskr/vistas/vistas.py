@@ -1,12 +1,16 @@
+from sqlalchemy.exc import IntegrityError
 from flask_restful import Resource
 from flask import request,Flask, request, send_from_directory
+from flask_jwt_extended import jwt_required, create_access_token,get_jwt
 from datetime import datetime
-from ..modelos import db, Task
+from ..modelos import db, Task, Usuario, TaskSchema
 import os
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
+
+task_schema = TaskSchema()
 
 class DownloadAudio(Resource):
 
@@ -38,4 +42,8 @@ class LoadAudio(Resource):
       else:
          return {"mensaje": "formato no valido a transformar"}
 
+class TaskDetail(Resource):
 
+   @jwt_required()
+   def get(self, id_task):
+        return task_schema.dump(Task.query.get_or_404(id_task))
