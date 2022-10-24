@@ -1,9 +1,6 @@
 import shutil
 from sqlite3 import IntegrityError
 from os import remove
-
-app = Flask(__name__)
-app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, create_access_token,get_jwt
 import os
@@ -15,13 +12,10 @@ from werkzeug.utils import secure_filename
 from os import remove
 from ..modelos import db, Task, User, UserSchema, TaskSchema
 
-
-user_schema = UserSchema()
-task_schema = TaskSchema()
-
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
 
+user_schema = UserSchema()
 task_schema = TaskSchema()
 
 class DownloadAudio(Resource):
