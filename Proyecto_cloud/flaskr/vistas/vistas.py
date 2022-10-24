@@ -1,18 +1,27 @@
 import shutil
 from sqlite3 import IntegrityError
-from flask_restful import Resource
-from flask import request,Flask, request, send_from_directory
-from datetime import datetime,timedelta
-import re
-from ..modelos import db, Task, User, TaskSchema
-import os
 from os import remove
-from flask_jwt_extended import jwt_required, create_access_token,get_jwt
-from datetime import datetime
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
+from sqlalchemy.exc import IntegrityError
+from flask_jwt_extended import jwt_required, create_access_token,get_jwt
+import os
+import re
+from flask import request,Flask, send_from_directory
+from flask_restful import Resource
+from datetime import datetime
+from werkzeug.utils import secure_filename
+from os import remove
+from ..modelos import db, Task, User, UserSchema, TaskSchema
+
+
+user_schema = UserSchema()
+task_schema = TaskSchema()
+
+app = Flask(__name__)
+app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
+
 task_schema = TaskSchema()
 
 class DownloadAudio(Resource):
@@ -139,6 +148,7 @@ class VistaUpdateTask(Resource):
             }, 200
       else:
          return {'mensaje':'Tarea no existente'}, 404
+
 class VistaSignIn(Resource):
 
    def post(self):
@@ -197,9 +207,10 @@ class VistaUpdateTask(Resource):
          state = task.state
 
          if state == 'processed':
+            path_file = task.path
             name_file = task.filename[:-3]
             new_name_file = name_file + task.newformat
-            remove("uploads/audios/" + new_name_file)
+            remove( path_file + new_name_file )
 
             task.newformat = request.json["newFormat"]
             task.state = "uploaded"
@@ -218,3 +229,7 @@ class VistaUpdateTask(Resource):
             }, 200
       else:
          return {'mensaje':'Tarea no existente'}, 404
+
+   @jwt_required()
+   def get(self, id_task):
+        return task_schema.dump(Task.query.get_or_404(id_task))
