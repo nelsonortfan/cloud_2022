@@ -58,9 +58,9 @@ class LoadAudio(Resource):
       print("El id de usuario es ", id)
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
-      if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wav':
+      if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wma':
          originalFileExtension = myfile.filename.split(".")[-1].lower()
-         if originalFileExtension == 'mp3' or originalFileExtension =='wav' or originalFileExtension =='ogg':
+         if originalFileExtension == 'mp3' or originalFileExtension =='wma' or originalFileExtension =='ogg':
             filename = secure_filename(myfile.filename)
             # validar si la ruta existe
             mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')

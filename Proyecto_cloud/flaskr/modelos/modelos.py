@@ -15,6 +15,8 @@ class Task(db.Model):
     state = db.Column(db.String(20))
     # id_usuario = db.Column(db.Integer)
     id_user = db.Column(db.Integer, db.ForeignKey("user.id"))
+    fecha_inicio = db.Column(db.String(20))
+    fecha_final = db.Column(db.String(20))
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
