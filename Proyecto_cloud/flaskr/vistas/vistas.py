@@ -5,7 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, create_access_token,get_jwt
 import os
 import re
-from flask import request,Flask, send_from_directory
+from sys import path
+
+from flask import request,Flask, request, send_from_directory
 from flask_restful import Resource
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -26,22 +28,28 @@ class DownloadAudio(Resource):
          claims = get_jwt()
          email = claims['sub']
          user= User.query.filter_by(email = email).first()
-         id_usuario = user.id
-         task = Task.query.filter_by(id_usuario = id_usuario,filename = filename).first()
+         id_usuario = user.id         
+         task = Task.query.filter_by(id_usuario = id_usuario).first()         
          if task is None:
             return {"mensaje": "Usuario no tiene ese archivo {} en su repositorio".format(filename)},404
          else:
             mypath = task.path
-            print("La ruta obtenida de la BD es {}".format(mypath))         
-         return send_from_directory(mypath, filename)
+            print("La ruta obtenida de la BD es {}".format(mypath))
+            filecomplete = mypath + filename
+            print("la ruta completa es ", filecomplete)
+            isExist = os.path.exists(filecomplete)
+            if isExist == True:
+               return send_from_directory(mypath, filename)
+            else:
+               return {"mensaje": "Archivo {} no existe en el repositorio del usuario".format(filename)},404 
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
    
 
 class LoadAudio(Resource):
+
    @jwt_required()
    def post(self):
-      
       claims = get_jwt()
       email = claims['sub']
       print("el correo es ", email)
@@ -50,11 +58,10 @@ class LoadAudio(Resource):
       print("El id de usuario es ", id)
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
-      if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wav':
+      if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wma':
          originalFileExtension = myfile.filename.split(".")[-1].lower()
-         if originalFileExtension == 'mp3' or originalFileExtension =='wav' or originalFileExtension =='ogg':
+         if originalFileExtension == 'mp3' or originalFileExtension =='wma' or originalFileExtension =='ogg':
             filename = secure_filename(myfile.filename)
-
             # validar si la ruta existe
             mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')
             print("La ruta concatenada es ", mypath)
@@ -64,11 +71,9 @@ class LoadAudio(Resource):
                print("creando el folder")
                os.mkdir(mypath)
                print("folder creado")
-            myfile.save(os.path.join(mypath, filename))
-            #myfile.save(os.path.join(app.config["UPLOADS_FOLDER"], filename))
+            myfile.save(os.path.join(mypath, filename))            
             mydate = datetime.utcnow()
-            mystatus = "uploaded"
-            #task = Task(filename=filename,initialformat=originalFileExtension,path=app.config["UPLOADS_FOLDER"], newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            mystatus = "uploaded"            
             task = Task(filename=filename,initialformat=originalFileExtension,path=mypath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
             db.session.add(task)
             db.session.commit()
