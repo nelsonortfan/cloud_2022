@@ -2,6 +2,7 @@ import subprocess
 import sys
 from flask import Flask
 from modelos import db, Task
+from datetime import datetime
 
 
 def run():
@@ -11,7 +12,8 @@ app = Flask(__name__)
 
 
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/2/'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/osboxes/Proyecto_cloud/instance/tutorial_canciones.db'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/osboxes/Proyecto_cloud/instance/tutorial_canciones.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://myusuarioandes:123456@localhost:5432/books_store'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False 
 
@@ -38,8 +40,10 @@ if __name__ == '__main__':
                     lista = "ftransc -f " + str(newformat) + " " + str(filename) + " --force-root -w"
                     cmd = ['ftransc', '-f', str(newformat), str(filename), '--force-root','-w']
                     print(lista)
+                    tarea.fecha_inicio = datetime.utcnow()
                     subprocess.call(cmd,cwd=mypath)                    
                     print("formato actualizado")
+                    tarea.fecha_final = datetime.utcnow()
                     tarea.state="procesed"
                     db.session.add(tarea)
                     db.session.commit()
