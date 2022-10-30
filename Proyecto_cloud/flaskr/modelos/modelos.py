@@ -14,6 +14,8 @@ class Task(db.Model):
     timestamp = db.Column(db.String(50))
     state = db.Column(db.String(20))
     id_usuario = db.Column(db.Integer)
+    fecha_inicio = db.Column(db.String(50))
+    fecha_final = db.Column(db.String(50))
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key = True)
