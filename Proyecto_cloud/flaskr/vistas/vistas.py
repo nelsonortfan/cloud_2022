@@ -14,6 +14,10 @@ from werkzeug.utils import secure_filename
 from os import remove
 from ..modelos import db, Task, User, UserSchema, TaskSchema
 
+# Import Google Client Libraries
+# from google.cloud import storage
+
+
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
 
@@ -50,6 +54,7 @@ class LoadAudio(Resource):
 
    @jwt_required()
    def post(self):
+
       claims = get_jwt()
       email = claims['sub']
       print("el correo es ", email)
@@ -58,8 +63,10 @@ class LoadAudio(Resource):
       print("El id de usuario es ", id)
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
+
       if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wma':
          originalFileExtension = myfile.filename.split(".")[-1].lower()
+
          if originalFileExtension == 'mp3' or originalFileExtension =='wma' or originalFileExtension =='ogg':
             filename = secure_filename(myfile.filename)
             # validar si la ruta existe
@@ -67,6 +74,7 @@ class LoadAudio(Resource):
             print("La ruta concatenada es ", mypath)
             isExist = os.path.exists(mypath)
             print("se valida si el folder existe y la respuesta es {}".format(isExist))
+
             if isExist == False:
                print("creando el folder")
                os.mkdir(mypath)
@@ -82,6 +90,7 @@ class LoadAudio(Resource):
             return {"mensaje": "formato no valido de archivo de audio cargado"}
       else:
          return {"mensaje": "formato no valido a transformar"}
+
 class DeleteAudio(Resource):
       @jwt_required()
       def delete(self):
@@ -232,3 +241,26 @@ class VistaUpdateTask(Resource):
    @jwt_required()
    def get(self, id_task):
         return task_schema.dump(Task.query.get_or_404(id_task))
+
+
+# def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
+#    """Uploads a file to the bucket."""
+
+#    # The ID of your GCS bucket
+#    # bucket_name = "your-bucket-name"
+
+#    # The contents to upload to the file
+#    # contents = "these are my contents"
+
+#    # The ID of your GCS object
+#    # destination_blob_name = "storage-object-name"
+
+#    storage_client = storage.Client()
+#    bucket = storage_client.bucket(bucket_name)
+#    blob = bucket.blob(destination_blob_name)
+
+#    blob.upload_from_string(contents)
+
+#    print(
+#       f"{destination_blob_name} with contents {contents} uploaded to {bucket_name}."
+#    )
