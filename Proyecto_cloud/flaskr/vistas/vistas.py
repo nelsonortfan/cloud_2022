@@ -15,7 +15,7 @@ from os import remove
 from ..modelos import db, Task, User, UserSchema, TaskSchema
 
 # Import Google Client Libraries
-# from google.cloud import storage
+from google.cloud import storage
 
 
 app = Flask(__name__)
@@ -57,34 +57,55 @@ class LoadAudio(Resource):
 
       claims = get_jwt()
       email = claims['sub']
-      print("el correo es ", email)
+      # print("el correo es ", email)
       user= User.query.filter_by(email = email).first()
       id = user.id
-      print("El id de usuario es ", id)
+      # print("El id de usuario es ", id)
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
 
+      # Validate the new format
       if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wma':
+         
+         # Validate the format of the uploaded file
          originalFileExtension = myfile.filename.split(".")[-1].lower()
-
          if originalFileExtension == 'mp3' or originalFileExtension =='wma' or originalFileExtension =='ogg':
+            
             filename = secure_filename(myfile.filename)
-            # validar si la ruta existe
-            mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')
-            print("La ruta concatenada es ", mypath)
-            isExist = os.path.exists(mypath)
-            print("se valida si el folder existe y la respuesta es {}".format(isExist))
 
-            if isExist == False:
-               print("creando el folder")
-               os.mkdir(mypath)
-               print("folder creado")
-            myfile.save(os.path.join(mypath, filename))            
-            mydate = datetime.utcnow()
-            mystatus = "uploaded"            
-            task = Task(filename=filename,initialformat=originalFileExtension,path=mypath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
-            db.session.add(task)
-            db.session.commit()
+            # validar si la ruta existe
+            # mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')
+            # print("La ruta concatenada es ", mypath)
+            # isExist = os.path.exists(mypath)
+            # print("se valida si el folder existe y la respuesta es {}".format(isExist))
+
+            # if isExist == False:
+            #    print("creando el folder")
+            #    os.mkdir(mypath)
+            #    print("folder creado")
+
+            # myfile.save(os.path.join(mypath, filename))   
+
+            # Save the file in Bucket of GCP
+            bucket_name = "audio_storage_cloud"
+            destination_blob_name = "{id}/{filename}"
+            contents = filename
+
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(destination_blob_name)
+
+            blob.upload_from_string(contents)
+
+            print(
+               f"{destination_blob_name} with contents {contents} uploaded to {bucket_name}."
+            )
+
+            # mydate = datetime.utcnow()
+            # mystatus = "uploaded"            
+            # task = Task(filename=filename,initialformat=originalFileExtension,path=mypath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            # db.session.add(task)
+            # db.session.commit()
             return {"mensaje": "cargue archivo {} exitoso".format(filename)}
          else:
             return {"mensaje": "formato no valido de archivo de audio cargado"}
@@ -240,7 +261,7 @@ class VistaUpdateTask(Resource):
 
    @jwt_required()
    def get(self, id_task):
-        return task_schema.dump(Task.query.get_or_404(id_task))
+      return task_schema.dump(Task.query.get_or_404(id_task))
 
 
 # def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
