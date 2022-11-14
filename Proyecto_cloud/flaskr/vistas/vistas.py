@@ -6,6 +6,7 @@ from flask_jwt_extended import jwt_required, create_access_token,get_jwt
 import os
 import re
 from sys import path
+import shutil
 
 from flask import request,Flask, request, send_from_directory
 from flask_restful import Resource
@@ -64,7 +65,9 @@ class DownloadAudio(Resource):
                )
             )
 
-            return send_from_directory('./', filename)
+            shutil.move(filename, '../uploads/audios/' + filename)
+
+            return send_from_directory('../uploads/audios/', filename)
 
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
