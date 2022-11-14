@@ -95,7 +95,7 @@ class LoadAudio(Resource):
             bucket = storage_client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
 
-            blob.upload_from_string(contents)
+            blob.upload_from_filename(request.files["file"])
 
             print(
                f"{destination_blob_name} with contents {contents} uploaded to {bucket_name}."
