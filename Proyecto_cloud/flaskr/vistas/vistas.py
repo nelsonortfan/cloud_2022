@@ -89,7 +89,7 @@ class LoadAudio(Resource):
             # Save the file in Bucket of GCP
             bucket_name = "audio_storage_cloud"
             destination_blob_name = str(id) + "/" + filename
-            contents = filename
+            contents = myfile
 
             storage_client = storage.Client()
             bucket = storage_client.bucket(bucket_name)
