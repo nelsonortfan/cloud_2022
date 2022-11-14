@@ -65,9 +65,10 @@ class DownloadAudio(Resource):
                )
             )
 
-            shutil.move(filename, '../uploads/audios/' + filename)
-
-            return send_from_directory('../uploads/audios/', filename)
+            # shutil.move(filename, '../uploads/audios/' + filename)
+            # return send_from_directory('../uploads/audios/', filename)
+            
+            return send_from_directory('./', filename)
 
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
