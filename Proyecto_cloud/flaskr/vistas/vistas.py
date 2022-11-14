@@ -65,10 +65,11 @@ class DownloadAudio(Resource):
                )
             )
 
+            return send_from_directory('./', filename)
+
             # shutil.move(filename, '../uploads/audios/' + filename)
             # return send_from_directory('../uploads/audios/', filename)
             
-            return send_from_directory('./', filename)
 
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
@@ -126,6 +127,7 @@ class LoadAudio(Resource):
                f"{destination_blob_name} with contents {contents} uploaded to {bucket_name}."
             )
 
+            # Update task information in DB
             mydate = datetime.utcnow()
             mystatus = "uploaded"            
             task = Task(filename=filename,initialformat=originalFileExtension,path=myPath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
@@ -143,14 +145,17 @@ class DeleteAudio(Resource):
          try:
             claims = get_jwt()
             email = claims['sub']
-            print("el correo es ", email)
+            # print("el correo es ", email)
             user= User.query.filter_by(email = email).first()
             id = user.id
+
             tasks = ([task_schema.dump(items) for items in Task.query.filter(Task.id_usuario == id)])
+
             for task in tasks:
                if(task['state'] == "uploaded"):
                   shutil.rmtree(os.path.join(app.config['UPLOADS_FOLDER'],str(id)))
                   return "Archivos"
+
          except Exception as e:
             return {"mensaje": "El archivo no existe"},404   
 
@@ -180,11 +185,23 @@ class VistaUpdateTask(Resource):
          task = Task.query.get(id_task)
          state = task.state
 
-         if state == 'uploaded':
+         if state == 'processed':
             name_file = task.filename[:-3]
             new_name_file = name_file + task.newformat
-            remove("uploads/audios/" + new_name_file)
+            path_file = str(task.id_usuario) + "/"
+            # remove(path_file + new_name_file)
 
+            # Remove object of GCP Bucket
+            bucket_name = "audio_storage_cloud"
+            blob_name = path_file + new_name_file
+
+            storage_client = storage.Client()
+
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+            blob.delete()
+
+            # Update task information in DB
             task.newformat = request.json["newFormat"]
             task.state = "uploaded"
             db.session.commit()
