@@ -36,7 +36,7 @@ class DownloadAudio(Resource):
          task = Task.query.filter_by(id_usuario = id_usuario).first()
 
          if task is None:
-            return {"mensaje": "Usuario no tiene ese archivo {} en su repositorio".format(filename)},404
+            return {"mensaje": "Usuario no tiene el archivo {} en su repositorio".format(filename)},404
          else:
             mypath = task.path
             # print("La ruta obtenida de la BD es {}".format(mypath))
@@ -56,7 +56,12 @@ class DownloadAudio(Resource):
             storage_client = storage.Client()
             bucket = storage_client.bucket(bucket_name)
             blob = bucket.blob(source_blob_name)
-            blob.download_to_filename(destination_file_name)
+            blob.download_to_file(destination_file_name)
+
+            print(
+               "Downloaded storage object {} from bucket {} to local file {}.".format(     source_blob_name, bucket_name, destination_file_name
+               )
+   )
 
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
