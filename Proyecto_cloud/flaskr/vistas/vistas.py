@@ -56,12 +56,14 @@ class DownloadAudio(Resource):
             storage_client = storage.Client()
             bucket = storage_client.bucket(bucket_name)
             blob = bucket.blob(source_blob_name)
-            blob.download_to_filename(destination_file_name)
+            contents = blob.download_as_string()
+            # blob.download_to_filename(destination_file_name)
 
-            # print(
-            #    "Downloaded storage object {} from bucket {} to local file {}.".format(     source_blob_name, bucket_name, destination_file_name
-            #    )
-            # )
+            print(
+               "Downloaded storage object {} from bucket {} as the following string: {}.".format(
+                     source_blob_name, bucket_name, contents
+               )
+            )
 
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
