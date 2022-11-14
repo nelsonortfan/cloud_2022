@@ -33,19 +33,31 @@ class DownloadAudio(Resource):
          email = claims['sub']
          user= User.query.filter_by(email = email).first()
          id_usuario = user.id         
-         task = Task.query.filter_by(id_usuario = id_usuario).first()         
+         task = Task.query.filter_by(id_usuario = id_usuario).first()
+
          if task is None:
             return {"mensaje": "Usuario no tiene ese archivo {} en su repositorio".format(filename)},404
          else:
             mypath = task.path
-            print("La ruta obtenida de la BD es {}".format(mypath))
+            # print("La ruta obtenida de la BD es {}".format(mypath))
             filecomplete = mypath + filename
-            print("la ruta completa es ", filecomplete)
-            isExist = os.path.exists(filecomplete)
-            if isExist == True:
-               return send_from_directory(mypath, filename)
-            else:
-               return {"mensaje": "Archivo {} no existe en el repositorio del usuario".format(filename)},404 
+            # print("la ruta completa es ", filecomplete)
+            # isExist = os.path.exists(filecomplete)
+            # if isExist == True:
+            #    return send_from_directory(mypath, filename)
+            # else:
+            #    return {"mensaje": "Archivo {} no existe en el repositorio del usuario".format(filename)},404 
+
+            # Dowload file from GCP Bucket
+            bucket_name = "audio_storage_cloud"
+            source_blob_name = filecomplete
+            destination_file_name = filename
+            
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(source_blob_name)
+            blob.download_to_filename(destination_file_name)
+
       except Exception as e:
          return {"mensaje": "Archivo {} no existe".format(filename)},404 
    
@@ -72,6 +84,7 @@ class LoadAudio(Resource):
          if originalFileExtension == 'mp3' or originalFileExtension =='wma' or originalFileExtension =='ogg':
             
             filename = secure_filename(myfile.filename)
+            myPath = str(id) + "/"
 
             # validar si la ruta existe
             # mypath =os.path.join(app.config['UPLOADS_FOLDER'], str(id), "").replace('\\','/')
@@ -88,7 +101,7 @@ class LoadAudio(Resource):
 
             # Save the file in Bucket of GCP
             bucket_name = "audio_storage_cloud"
-            destination_blob_name = str(id) + "/" + filename
+            destination_blob_name = myPath + filename
             contents = myfile
 
             storage_client = storage.Client()
@@ -101,11 +114,11 @@ class LoadAudio(Resource):
                f"{destination_blob_name} with contents {contents} uploaded to {bucket_name}."
             )
 
-            # mydate = datetime.utcnow()
-            # mystatus = "uploaded"            
-            # task = Task(filename=filename,initialformat=originalFileExtension,path=mypath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
-            # db.session.add(task)
-            # db.session.commit()
+            mydate = datetime.utcnow()
+            mystatus = "uploaded"            
+            task = Task(filename=filename,initialformat=originalFileExtension,path=myPath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            db.session.add(task)
+            db.session.commit()
             return {"mensaje": "cargue archivo {} exitoso".format(filename)}
          else:
             return {"mensaje": "formato no valido de archivo de audio cargado"}
