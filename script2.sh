@@ -1,6 +1,7 @@
 #! /bin/bash
 
 cd ..
+cd krishtiand/
 mkdir Proyecto_Cloud
 cd Proyecto_Cloud/
 sudo apt install git
