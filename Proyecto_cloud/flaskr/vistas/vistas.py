@@ -17,13 +17,18 @@ from ..modelos import db, Task, User, UserSchema, TaskSchema
 
 # Import Google Client Libraries
 from google.cloud import storage
-
+from google.cloud import pubsub_v1
 
 app = Flask(__name__)
 app.config['UPLOADS_FOLDER'] = 'uploads/audios/'
 
 user_schema = UserSchema()
 task_schema = TaskSchema()
+
+
+
+publisher = pubsub_v1.PublisherClient()
+topic_path = 'projects/cloud-andes-conversion-tool/topics/Prueba-Audio'
 
 class DownloadAudio(Resource):
 
@@ -35,6 +40,9 @@ class DownloadAudio(Resource):
          user= User.query.filter_by(email = email).first()
          id_usuario = user.id         
          task = Task.query.filter_by(id_usuario = id_usuario).first()
+
+         
+
 
          if task is None:
             return {"mensaje": "Usuario no tiene el archivo {} en su repositorio".format(filename)},404
@@ -89,6 +97,7 @@ class LoadAudio(Resource):
       myfile = request.files["file"]
       newformat = request.form["newFormat"]
 
+      
       # Validate the new format
       if newformat == 'ogg' or newformat == 'mp3' or newformat == 'wma':
          
@@ -126,11 +135,17 @@ class LoadAudio(Resource):
             print(
                f"{destination_blob_name} with contents {contents} uploaded to {bucket_name}."
             )
-
+            data = 'Mensaje 1'
+            data = data.encode('utf-8')
+            
             # Update task information in DB
+            
             mydate = datetime.utcnow()
             mystatus = "uploaded"            
             task = Task(filename=filename,initialformat=originalFileExtension,path=myPath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
+            attributes = {'mydate': mydate,'mystatus': mystatus,'task': task.filename, 'initialformat':task.initialformat, 'newformat':task.newformat}
+            future = publisher.publish(topic_path, data, **attributes)
+            print(f'published message id {future.result()}')
             db.session.add(task)
             db.session.commit()
             return {"mensaje": "cargue archivo {} exitoso".format(filename)}
@@ -304,6 +319,8 @@ class VistaUpdateTask(Resource):
    @jwt_required()
    def get(self, id_task):
       return task_schema.dump(Task.query.get_or_404(id_task))
+   
+   
 
 
 # def upload_blob_from_memory(bucket_name, contents, destination_blob_name):
