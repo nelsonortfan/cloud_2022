@@ -7,3 +7,11 @@ marshmallow_sqlalchemy==0.28.1
 SQLAlchemy==1.4.40
 Werkzeug==2.2.2
 flaskr==1.0.0
+Flask-RESTful
+Flask-jwt-extended
+flask_sqlalchemy
+marshmallow-sqlalchemy
+google-api-core
+google-cloud-storage
+google-cloud-pubsub
+psycopg2-binary
