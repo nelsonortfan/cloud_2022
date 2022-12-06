@@ -143,7 +143,7 @@ class LoadAudio(Resource):
             mydate = datetime.utcnow()
             mystatus = "uploaded"            
             task = Task(filename=filename,initialformat=originalFileExtension,path=myPath, newformat=newformat,timestamp=mydate,state=mystatus,id_usuario = id)
-            attributes = {'mydate': mydate,'mystatus': mystatus,'task': task.filename, 'initialformat':task.initialformat, 'newformat':task.newformat}
+            attributes = {'id':str(id),'mydate': str(mydate),'mystatus': mystatus,'task': task.filename, 'initialformat':task.initialformat, 'newformat':task.newformat, 'filename':task.filename}
             future = publisher.publish(topic_path, data, **attributes)
             print(f'published message id {future.result()}')
             db.session.add(task)
